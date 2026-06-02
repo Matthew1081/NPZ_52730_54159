@@ -8,7 +8,7 @@ const Login = ({ onNavigate, onLogin }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!email || !password) {
-      setError('Wszystkie pola są wymagane.'); [cite: 4]
+      setError('Wszystkie pola są wymagane.');
       return;
     }
     setError('');
@@ -73,7 +73,7 @@ const styles = {
   form: { textAlign: 'left' },
   inputGroup: { marginBottom: '20px' },
   label: { display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#444' },
-  input: { width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid '#ccc', boxSizing: 'border-box' },
+  input: { width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc', boxSizing: 'border-box' },
   button: { width: '100%', padding: '12px', backgroundColor: '#007bff', color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer', fontSize: '16px' },
   error: { backgroundColor: '#f8d7da', color: '#721c24', padding: '10px', borderRadius: '4px', marginBottom: '20px', textAlign: 'left' },
   footerText: { marginTop: '20px', color: '#666' },
