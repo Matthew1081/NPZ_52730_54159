@@ -7,14 +7,12 @@ const Dashboard = ({ user, onNavigate, onLogout }) => {
   const transactions = useSelector((state) => state.transactions.items);
   const status = useSelector((state) => state.transactions.status);
 
- 
+  // Zawsze pobieramy świeże dane z serwera
   useEffect(() => {
     dispatch(fetchTransactions());
   }, [dispatch]);
 
-  
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  
   
   const [form, setForm] = useState({ 
     id: null, title: '', amount: '', type: 'expense', 
@@ -25,9 +23,31 @@ const Dashboard = ({ user, onNavigate, onLogout }) => {
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState('Wszystkie');
 
-  
-  const exchangeRates = { PLN: 1, USD: 4.0, EUR: 4.3 };
+  // 1. Zdefiniowany stan dla walut (domyślne wartości w razie braku internetu)
+  const [exchangeRates, setExchangeRates] = useState({ PLN: 1, USD: 4.0, EUR: 4.3 });
 
+  // 2. Pobieranie prawdziwych kursów z publicznego API NBP
+  useEffect(() => {
+    const fetchRates = async () => {
+      try {
+        const response = await fetch('http://api.nbp.pl/api/exchangerates/tables/A/?format=json');
+        if (!response.ok) throw new Error('Błąd NBP');
+        const data = await response.json();
+        const rates = data[0].rates;
+        
+        setExchangeRates({
+          PLN: 1,
+          USD: rates.find(r => r.code === 'USD').mid,
+          EUR: rates.find(r => r.code === 'EUR').mid
+        });
+      } catch (error) {
+        console.error("Używam domyślnych kursów walut.", error);
+      }
+    };
+    fetchRates();
+  }, []);
+
+  // Nasłuchiwanie stanu sieci (Online/Offline)
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
@@ -51,26 +71,21 @@ const Dashboard = ({ user, onNavigate, onLogout }) => {
 
   const balance = totalIncome - totalExpense;
 
-  
   const handleSave = (e) => {
     e.preventDefault();
     if (!form.title || !form.amount || !form.date) return;
 
-    
     const { id, ...rest } = form;
     const payload = { ...rest, amount: parseFloat(form.amount) };
 
     if (id) {
-      
       dispatch(updateTransactionAPI({ ...payload, id }));
     } else {
-      
       dispatch(addTransactionAPI(payload))
-        .unwrap() 
+        .unwrap()
         .catch(err => alert("Błąd zapisu: sprawdź konsolę (F12)"));
     }
     
-  
     setForm({ 
       id: null, title: '', amount: '', type: 'expense', 
       category: 'Jedzenie', currency: 'PLN', 
@@ -82,7 +97,6 @@ const Dashboard = ({ user, onNavigate, onLogout }) => {
     setForm(transaction);
   };
 
- 
   const handleDelete = (id) => {
     dispatch(deleteTransactionAPI(id));
   };
@@ -171,7 +185,7 @@ const Dashboard = ({ user, onNavigate, onLogout }) => {
             <button type="submit" style={{...dashStyles.btn, backgroundColor: form.id ? '#ffc107' : '#007bff'}}>
               {form.id ? 'Zaktualizuj wpis' : 'Dodaj wpis'}
             </button>
-            {form.id && <button type="button" onClick={() => setForm({ id: null, title: '', amount: '', type: 'expense', category: 'Jedzenie', currency: 'PLN', date: '' })} style={{...dashStyles.btn, backgroundColor: '#6c757d', marginTop: '5px'}}>Anuluj edycję</button>}
+            {form.id && <button type="button" onClick={() => setForm({ id: null, title: '', amount: '', type: 'expense', category: 'Jedzenie', currency: 'PLN', date: new Date().toISOString().split('T')[0] })} style={{...dashStyles.btn, backgroundColor: '#6c757d', marginTop: '5px'}}>Anuluj edycję</button>}
           </form>
         </div>
 
