@@ -1,17 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { addTransaction, updateTransaction, deleteTransaction } from './store/transactionsSlice';
+import { fetchTransactions, addTransactionAPI, updateTransactionAPI, deleteTransactionAPI } from './store/transactionsSlice';
 
 const Dashboard = ({ user, onNavigate, onLogout }) => {
-  
-  const transactions = useSelector((state) => state.transactions.items);
   const dispatch = useDispatch();
+  const transactions = useSelector((state) => state.transactions.items);
+  const status = useSelector((state) => state.transactions.status);
+
+ 
+  useEffect(() => {
+    if (status === 'idle') {
+      dispatch(fetchTransactions());
+    }
+  }, [status, dispatch]);
 
   
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   
   
-  const [form, setForm] = useState({ id: null, title: '', amount: '', type: 'expense', category: 'Jedzenie', currency: 'PLN', date: '' });
+  const [form, setForm] = useState({ 
+    id: null, title: '', amount: '', type: 'expense', 
+    category: 'Jedzenie', currency: 'PLN', 
+    date: new Date().toISOString().split('T')[0] 
+  });
+  
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState('Wszystkie');
 
@@ -49,21 +61,28 @@ const Dashboard = ({ user, onNavigate, onLogout }) => {
     const payload = { ...form, amount: parseFloat(form.amount) };
 
     if (form.id) {
-      dispatch(updateTransaction(payload));
+      
+      dispatch(updateTransactionAPI(payload));
     } else {
-      dispatch(addTransaction({ ...payload, id: Date.now() }));
+      
+      dispatch(addTransactionAPI(payload));
     }
     
-    setForm({ id: null, title: '', amount: '', type: 'expense', category: 'Jedzenie', currency: 'PLN', date: '' });
+    
+    setForm({ 
+      id: null, title: '', amount: '', type: 'expense', 
+      category: 'Jedzenie', currency: 'PLN', 
+      date: new Date().toISOString().split('T')[0] 
+    });
   };
 
   const handleEdit = (transaction) => {
     setForm(transaction);
   };
 
-  
+ 
   const handleDelete = (id) => {
-    dispatch(deleteTransaction(id));
+    dispatch(deleteTransactionAPI(id));
   };
 
   const filteredTransactions = transactions.filter(t => {
