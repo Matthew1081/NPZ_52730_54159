@@ -20,3 +20,11 @@ If you are developing a production application, we recommend using TypeScript wi
 npm run dev
 
 docker-compose up
+
+
+
+wersja produkcyjna:
+
+npm run build
+
+npm run preview

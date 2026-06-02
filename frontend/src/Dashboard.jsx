@@ -1,15 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchTransactions, addTransactionAPI, updateTransactionAPI, deleteTransactionAPI } from './store/transactionsSlice';
+import { fetchTransactions, addTransactionAPI, updateTransactionAPI, deleteTransactionAPI, syncOfflineTransactions } from './store/transactionsSlice';
 
 const Dashboard = ({ user, onNavigate, onLogout }) => {
   const dispatch = useDispatch();
   const transactions = useSelector((state) => state.transactions.items);
   const status = useSelector((state) => state.transactions.status);
 
-  // Zawsze pobieramy świeże dane z serwera
+ 
+  
   useEffect(() => {
-    dispatch(fetchTransactions());
+    if (navigator.onLine) {
+      
+      dispatch(syncOfflineTransactions()).then(() => {
+        dispatch(fetchTransactions());
+      });
+    } else {
+      
+      dispatch(fetchTransactions());
+    }
   }, [dispatch]);
 
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -23,10 +32,10 @@ const Dashboard = ({ user, onNavigate, onLogout }) => {
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState('Wszystkie');
 
-  // 1. Zdefiniowany stan dla walut (domyślne wartości w razie braku internetu)
+  
   const [exchangeRates, setExchangeRates] = useState({ PLN: 1, USD: 4.0, EUR: 4.3 });
 
-  // 2. Pobieranie prawdziwych kursów z publicznego API NBP
+  
   useEffect(() => {
     const fetchRates = async () => {
       try {
@@ -47,17 +56,22 @@ const Dashboard = ({ user, onNavigate, onLogout }) => {
     fetchRates();
   }, []);
 
-  // Nasłuchiwanie stanu sieci (Online/Offline)
+  
+  
   useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
+    const handleOnline = () => {
+      setIsOnline(true);
+      dispatch(syncOfflineTransactions()); 
+    };
     const handleOffline = () => setIsOnline(false);
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, [dispatch]);
 
   const convertToPLN = (amount, currency) => amount * (exchangeRates[currency] || 1);
 
@@ -83,7 +97,10 @@ const Dashboard = ({ user, onNavigate, onLogout }) => {
     } else {
       dispatch(addTransactionAPI(payload))
         .unwrap()
-        .catch(err => alert("Błąd zapisu: sprawdź konsolę (F12)"));
+        .catch(err => {
+          if (err && err.isOfflineObj) return; 
+          alert("Błąd zapisu: sprawdź konsolę (F12)");
+        });
     }
     
     setForm({ 
@@ -213,7 +230,10 @@ const Dashboard = ({ user, onNavigate, onLogout }) => {
               filteredTransactions.map(t => (
                 <div key={t.id} style={dashStyles.listItem}>
                   <div>
-                    <strong style={{fontSize: '16px'}}>{t.title}</strong>
+                    <strong style={{fontSize: '16px'}}>
+                      {t.title}
+                      {t.isOffline && <span style={{fontSize: '12px', color: '#ffc107', marginLeft: '8px'}}>⏳ (oczekuje na synchr.)</span>}
+                    </strong>
                     <div style={{fontSize: '12px', color: '#777'}}>{t.category} • {t.date}</div>
                   </div>
                   <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
