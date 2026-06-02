@@ -1,22 +1,43 @@
 import React, { useState } from 'react';
 
 const Login = ({ onNavigate, onLogin }) => {
-  const [email, setEmail] = useState('example@email.com');
-  const [password, setPassword] = useState('password123!@#');
-  const [error, setError] = useState('');
+  const [username, setUsername] = useState('');
+const [password, setPassword] = useState('');
+const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  if (!username || !password) {
+    setError('Wszystkie pola są wymagane.');
+    return;
+  }
+
+  try {
     
-    if (!email || !password) {
-      setError('Wszystkie pola są wymagane.');
-      return;
+    const response = await fetch('http://localhost:8000/api/token/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Nieprawidłowy login lub hasło!');
     }
 
-    setError('');
+    const data = await response.json();
     
-    onLogin({ email });
-  };
+    
+    localStorage.setItem('access_token', data.access);
+    localStorage.setItem('refresh_token', data.refresh);
+    localStorage.setItem('auth_user', JSON.stringify({ username }));
+    
+    setError('');
+    onLogin({ username }); 
+  } catch (err) {
+    setError(err.message);
+  }
+};
 
   return (
     <div style={styles.container}>
@@ -28,12 +49,12 @@ const Login = ({ onNavigate, onLogin }) => {
 
         <form onSubmit={handleSubmit} style={styles.form}>
           <div style={styles.inputGroup}>
-            <label htmlFor="email" style={styles.label}>E-mail:</label>
+            <label htmlFor="text" style={styles.label}>Nazwa Użytkownika:</label>
             <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              id="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               style={styles.input}
               required
             />

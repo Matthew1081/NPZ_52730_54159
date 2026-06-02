@@ -2,6 +2,13 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
 const API_URL = 'http://localhost:8000/api/transactions/';
 
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('access_token');
+  return {
+    'Content-Type': getAuthHeaders(),
+    'Authorization': token ? `Bearer ${token}` : '',
+  };
+};
 
 export const fetchTransactions = createAsyncThunk('transactions/fetch', async () => {
   const response = await fetch(API_URL);
@@ -13,7 +20,7 @@ export const fetchTransactions = createAsyncThunk('transactions/fetch', async ()
 export const addTransactionAPI = createAsyncThunk('transactions/add', async (transaction) => {
   const response = await fetch(API_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': getAuthHeaders() },
     body: JSON.stringify(transaction),
   });
   return response.json();
@@ -23,7 +30,7 @@ export const addTransactionAPI = createAsyncThunk('transactions/add', async (tra
 export const updateTransactionAPI = createAsyncThunk('transactions/update', async (transaction) => {
   const response = await fetch(`${API_URL}${transaction.id}/`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': getAuthHeaders() },
     body: JSON.stringify(transaction),
   });
   return response.json();
