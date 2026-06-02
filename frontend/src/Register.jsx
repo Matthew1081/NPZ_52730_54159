@@ -1,23 +1,45 @@
 import React, { useState } from 'react';
 
 const Register = ({ onNavigate }) => {
-  const [email, setEmail] = useState('example@email.com');
-  const [password, setPassword] = useState('password123!@#');
-  const [confirmPassword, setConfirmPassword] = useState('password123!@#');
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
     if (password !== confirmPassword) {
       setError('Hasła nie są identyczne.');
       return;
     }
-    setError('');
-    setSuccess(true);
-    setTimeout(() => {
-      onNavigate('login');
-    }, 1500);
+
+    try {
+      const response = await fetch('http://localhost:8000/api/register/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email, password }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        if (errData.username) throw new Error(errData.username[0]);
+        throw new Error('Błąd rejestracji. Spróbuj innych danych.');
+      }
+
+      setError('');
+      setSuccess(true);
+      
+      
+      setTimeout(() => {
+        onNavigate('login');
+      }, 1500);
+      
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   return (
@@ -30,6 +52,18 @@ const Register = ({ onNavigate }) => {
         {success && <div style={{...styles.error, backgroundColor: '#d4edda', color: '#155724'}}>Konto utworzone pomyślnie! Przekierowanie...</div>}
 
         <form onSubmit={handleSubmit} style={styles.form}>
+          <div style={styles.inputGroup}>
+            <label htmlFor="username" style={styles.label}>Nazwa użytkownika:</label>
+            <input
+              type="text"
+              id="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              style={styles.input}
+              required
+            />
+          </div>
+
           <div style={styles.inputGroup}>
             <label htmlFor="email" style={styles.label}>E-mail:</label>
             <input
@@ -79,6 +113,7 @@ const Register = ({ onNavigate }) => {
     </div>
   );
 };
+
 
 const styles = {
   container: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#f4f6f9', fontFamily: 'Arial, sans-serif' },

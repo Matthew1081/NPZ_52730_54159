@@ -9,10 +9,8 @@ const Dashboard = ({ user, onNavigate, onLogout }) => {
 
  
   useEffect(() => {
-    if (status === 'idle') {
-      dispatch(fetchTransactions());
-    }
-  }, [status, dispatch]);
+    dispatch(fetchTransactions());
+  }, [dispatch]);
 
   
   const [isOnline, setIsOnline] = useState(navigator.onLine);

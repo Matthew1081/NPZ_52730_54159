@@ -25,7 +25,13 @@ function App() {
   const handleLogout = () => {
     setUser(null);
     setCurrentPage('login');
-    localStorage.removeItem('auth_user'); 
+    
+    
+    localStorage.removeItem('auth_user');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    
+    window.location.reload(); 
   };
 
   return (
