@@ -7,21 +7,22 @@ const Login = ({ onNavigate, onLogin }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
     if (!email || !password) {
       setError('Wszystkie pola są wymagane.');
       return;
     }
+
     setError('');
-    // Tutaj w przyszłości trafi logika przekazania tokenu JWT 
+    // Przekazujemy dane do App.jsx, co spowoduje zmianę ekranu
     onLogin({ email });
-    onNavigate('home');
   };
 
   return (
     <div style={styles.container}>
       <div style={styles.card}>
         <h1 style={styles.title}>Zaloguj się</h1>
-        <p style={styles.subtitle}>Osobisty Asystent Finansowy</p> 
+        <p style={styles.subtitle}>Osobisty Asystent Finansowy</p>
         
         {error && <div style={styles.error}>{error}</div>}
 
@@ -63,7 +64,6 @@ const Login = ({ onNavigate, onLogin }) => {
     </div>
   );
 };
-
 
 const styles = {
   container: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#f4f6f9', fontFamily: 'Arial, sans-serif' },

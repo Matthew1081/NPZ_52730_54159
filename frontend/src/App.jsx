@@ -4,16 +4,21 @@ import Register from './Register';
 import Dashboard from './Dashboard';
 
 function App() {
+  // Domyślnie startujemy na ekranie logowania
   const [currentPage, setCurrentPage] = useState('login');
+  // Tutaj będziemy przechowywać dane zalogowanego użytkownika
   const [user, setUser] = useState(null);
 
+  // Funkcja wywoływana przy poprawnym logowaniu
   const handleLogin = (userData) => {
-    setUser(userData);
+    setUser(userData);      // Zapisujemy dane użytkownika (np. email)
+    setCurrentPage('home'); // Przełączamy ekran na główny panel
   };
 
+  // Funkcja wywoływana przy wylogowaniu
   const handleLogout = () => {
-    setUser(null);
-    setCurrentPage('login');
+    setUser(null);          // Czyszczenie danych użytkownika
+    setCurrentPage('login'); // Powrót do ekranu logowania
   };
 
   return (
