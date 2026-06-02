@@ -1,24 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Login from './Login';
 import Register from './Register';
 import Dashboard from './Dashboard';
 
 function App() {
-  // Domyślnie startujemy na ekranie logowania
-  const [currentPage, setCurrentPage] = useState('login');
-  // Tutaj będziemy przechowywać dane zalogowanego użytkownika
-  const [user, setUser] = useState(null);
+  // 1. Inicjalizacja stanu na podstawie tego, co jest w pamięci przeglądarki
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem('auth_user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
 
-  // Funkcja wywoływana przy poprawnym logowaniu
+  const [currentPage, setCurrentPage] = useState(() => {
+    return localStorage.getItem('auth_user') ? 'home' : 'login';
+  });
+
+  // 2. Aktualizacja przy logowaniu
   const handleLogin = (userData) => {
-    setUser(userData);      // Zapisujemy dane użytkownika (np. email)
-    setCurrentPage('home'); // Przełączamy ekran na główny panel
+    setUser(userData);
+    setCurrentPage('home');
+    localStorage.setItem('auth_user', JSON.stringify(userData)); // Zapisujemy sesję
   };
 
-  // Funkcja wywoływana przy wylogowaniu
+  // 3. Aktualizacja przy wylogowaniu
   const handleLogout = () => {
-    setUser(null);          // Czyszczenie danych użytkownika
-    setCurrentPage('login'); // Powrót do ekranu logowania
+    setUser(null);
+    setCurrentPage('login');
+    localStorage.removeItem('auth_user'); // Czyścimy sesję
   };
 
   return (

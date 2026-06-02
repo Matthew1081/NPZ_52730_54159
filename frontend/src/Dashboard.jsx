@@ -1,22 +1,21 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { addTransaction, updateTransaction, deleteTransaction } from './store/transactionsSlice';
 
 const Dashboard = ({ user, onNavigate, onLogout }) => {
-  // Stan sieci (Wymaganie: Tryb Offline i Synchronizacja)
+  // Pobieramy transakcje z Reduksa
+  const transactions = useSelector((state) => state.transactions.items);
+  const dispatch = useDispatch();
+
+  // Stan sieci (Tryb Offline i Synchronizacja)
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   
-  // Przykładowe dane transakcji w stanie aplikacji
-  const [transactions, setTransactions] = useState([
-    { id: 1, title: 'Wynagrodzenie', amount: 5000, type: 'income', category: 'Praca', currency: 'PLN', date: '2026-06-01' },
-    { id: 2, title: 'Zakupy spożywcze', amount: 150, type: 'expense', category: 'Jedzenie', currency: 'PLN', date: '2026-06-02' },
-    { id: 3, title: 'Obiad w Berlinie', amount: 25, type: 'expense', category: 'Rozrywka', currency: 'EUR', date: '2026-06-02' } // Przykład obcej waluty
-  ]);
-
-  // Stan formularza CRUD
+  // Stan formularza
   const [form, setForm] = useState({ id: null, title: '', amount: '', type: 'expense', category: 'Jedzenie', currency: 'PLN', date: '' });
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState('Wszystkie');
 
-  // Kursy walut (Symulacja pobierania z NBP API / Exchange Rate-API)
+  // Kursy walut (tymczasowo zahardkodowane)
   const exchangeRates = { PLN: 1, USD: 4.0, EUR: 4.3 };
 
   useEffect(() => {
@@ -30,7 +29,6 @@ const Dashboard = ({ user, onNavigate, onLogout }) => {
     };
   }, []);
 
-  // Obliczanie statystyk (automatyczne przeliczanie obcych walut na PLN)
   const convertToPLN = (amount, currency) => amount * (exchangeRates[currency] || 1);
 
   const totalIncome = transactions
@@ -43,34 +41,31 @@ const Dashboard = ({ user, onNavigate, onLogout }) => {
 
   const balance = totalIncome - totalExpense;
 
-  // Obsługa zapisu (Create / Update)
+  // Zapis do Reduksa (Create / Update)
   const handleSave = (e) => {
     e.preventDefault();
     if (!form.title || !form.amount || !form.date) return;
 
+    const payload = { ...form, amount: parseFloat(form.amount) };
+
     if (form.id) {
-      // Update
-      setTransactions(transactions.map(t => t.id === form.id ? { ...form, amount: parseFloat(form.amount) } : t));
+      dispatch(updateTransaction(payload));
     } else {
-      // Create
-      const newTransaction = { ...form, id: Date.now(), amount: parseFloat(form.amount) };
-      setTransactions([...transactions, newTransaction]);
+      dispatch(addTransaction({ ...payload, id: Date.now() }));
     }
-    // Reset formularza
+    
     setForm({ id: null, title: '', amount: '', type: 'expense', category: 'Jedzenie', currency: 'PLN', date: '' });
   };
 
-  // Edycja (Wypełnienie formularza danymi)
   const handleEdit = (transaction) => {
     setForm(transaction);
   };
 
-  // Usuwanie (Delete)
+  // Usuwanie z Reduksa (Delete)
   const handleDelete = (id) => {
-    setTransactions(transactions.filter(t => t.id !== id));
+    dispatch(deleteTransaction(id));
   };
 
-  // Filtrowanie (Read z wyszukiwaniem)
   const filteredTransactions = transactions.filter(t => {
     const matchesSearch = t.title.toLowerCase().includes(search.toLowerCase());
     const matchesCategory = filterCategory === 'Wszystkie' || t.category === filterCategory;
@@ -79,29 +74,27 @@ const Dashboard = ({ user, onNavigate, onLogout }) => {
 
   return (
     <div style={dashStyles.container}>
-      {/* Pasek Nawigacji */}
       <nav style={dashStyles.navbar}>
-        <h2>Osobisty Asystent Finansowy</h2> 
+        <h2>Osobisty Asystent Finansowy</h2>
         <div style={dashStyles.navActions}>
           <span style={{
             ...dashStyles.statusBadge, 
             backgroundColor: isOnline ? '#28a745' : '#dc3545'
           }}>
-            {isOnline ? '● Online (Zsynchronizowano)' : '● Offline (Zapis lokalny)'} 
+            {isOnline ? '● Online' : '● Offline (Zapis lokalny)'}
           </span>
           <span style={dashStyles.userEmail}>{user?.email || 'Gość'}</span>
           <button onClick={onLogout} style={dashStyles.logoutBtn}>Wyloguj</button>
         </div>
       </nav>
 
-      {/* Panele Statystyk */}
       <div style={dashStyles.statsGrid}>
         <div style={{...dashStyles.statCard, borderLeft: '5px solid #28a745'}}>
-          <h3>Przychody (w PLN)</h3> 
+          <h3>Przychody (w PLN)</h3>
           <p style={{color: '#28a745', fontSize: '24px', fontWeight: 'bold'}}>{totalIncome.toFixed(2)} zł</p>
         </div>
         <div style={{...dashStyles.statCard, borderLeft: '5px solid #dc3545'}}>
-          <h3>Wydatki (w PLN)</h3> 
+          <h3>Wydatki (w PLN)</h3>
           <p style={{color: '#dc3545', fontSize: '24px', fontWeight: 'bold'}}>{totalExpense.toFixed(2)} zł</p>
         </div>
         <div style={{...dashStyles.statCard, borderLeft: '5px solid #007bff'}}>
@@ -111,9 +104,8 @@ const Dashboard = ({ user, onNavigate, onLogout }) => {
       </div>
 
       <div style={dashStyles.mainGrid}>
-        {/* Formularz Dodawania / Edycji */}
         <div style={dashStyles.card}>
-          <h3>{form.id ? 'Edytuj transakcję' : 'Dodaj nową transakcję'}</h3> 
+          <h3>{form.id ? 'Edytuj transakcję' : 'Dodaj nową transakcję'}</h3>
           <form onSubmit={handleSave} style={dashStyles.form}>
             <input 
               type="text" 
@@ -136,12 +128,12 @@ const Dashboard = ({ user, onNavigate, onLogout }) => {
                 <option value="PLN">PLN</option>
                 <option value="USD">USD</option>
                 <option value="EUR">EUR</option>
-              </select> 
+              </select>
             </div>
             <select value={form.type} onChange={e => setForm({...form, type: e.target.value})} style={dashStyles.input}>
               <option value="expense">Wydatek</option>
               <option value="income">Przychód</option>
-            </select> 
+            </select>
             <select value={form.category} onChange={e => setForm({...form, category: e.target.value})} style={dashStyles.input}>
               <option value="Jedzenie">Jedzenie</option>
               <option value="Praca">Praca / Zarobki</option>
@@ -156,17 +148,14 @@ const Dashboard = ({ user, onNavigate, onLogout }) => {
               required 
             />
             <button type="submit" style={{...dashStyles.btn, backgroundColor: form.id ? '#ffc107' : '#007bff'}}>
-              {form.id ? 'Zaktualizuj wpis' : 'Dodaj wpis'} 
+              {form.id ? 'Zaktualizuj wpis' : 'Dodaj wpis'}
             </button>
             {form.id && <button type="button" onClick={() => setForm({ id: null, title: '', amount: '', type: 'expense', category: 'Jedzenie', currency: 'PLN', date: '' })} style={{...dashStyles.btn, backgroundColor: '#6c757d', marginTop: '5px'}}>Anuluj edycję</button>}
           </form>
         </div>
 
-        {/* Historia Transakcji z filtrami */}
         <div style={{...dashStyles.card, flex: 2}}>
-          <h3>Historia transakcji</h3> 
-          
-          {/* Filtry */}
+          <h3>Historia transakcji</h3>
           <div style={dashStyles.filtersContainer}>
             <input 
               type="text" 
@@ -174,9 +163,9 @@ const Dashboard = ({ user, onNavigate, onLogout }) => {
               value={search} 
               onChange={e => setSearch(e.target.value)} 
               style={{...dashStyles.input, margin: 0, flex: 2}} 
-            /> 
+            />
             <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} style={{...dashStyles.input, margin: 0, flex: 1}}>
-              <option value="Wszystkie">Wszystkie kategorie</option> 
+              <option value="Wszystkie">Wszystkie kategorie</option>
               <option value="Jedzenie">Jedzenie</option>
               <option value="Praca">Praca / Zarobki</option>
               <option value="Rozrywka">Rozrywka</option>
@@ -184,9 +173,8 @@ const Dashboard = ({ user, onNavigate, onLogout }) => {
             </select>
           </div>
 
-          {/* Lista wpisów */}
           <div style={dashStyles.list}>
-            {filteredTransactions.length === 0 ? <p style={{color: '#999'}}>Brak pasujących transakcji.</p> : (
+            {filteredTransactions.length === 0 ? <p style={{color: '#999'}}>Brak wpisów.</p> : (
               filteredTransactions.map(t => (
                 <div key={t.id} style={dashStyles.listItem}>
                   <div>
@@ -199,10 +187,10 @@ const Dashboard = ({ user, onNavigate, onLogout }) => {
                       color: t.type === 'income' ? '#28a745' : '#dc3545'
                     }}>
                       {t.type === 'income' ? '+' : '-'} {t.amount} {t.currency}
-                      {t.currency !== 'PLN' && <div style={{fontSize: '10px', color: '#777', textAlign: 'right'}}>≈ {(convertToPLN(t.amount, t.currency)).toFixed(2)} PLN</div>} 
+                      {t.currency !== 'PLN' && <div style={{fontSize: '10px', color: '#777', textAlign: 'right'}}>≈ {(convertToPLN(t.amount, t.currency)).toFixed(2)} PLN</div>}
                     </span>
-                    <button onClick={() => handleEdit(t)} style={dashStyles.iconBtn}>✏️</button> 
-                    <button onClick={() => handleDelete(t.id)} style={{...dashStyles.iconBtn, color: '#dc3545'}}>❌</button> 
+                    <button onClick={() => handleEdit(t)} style={dashStyles.iconBtn}>✏️</button>
+                    <button onClick={() => handleDelete(t.id)} style={{...dashStyles.iconBtn, color: '#dc3545'}}>❌</button>
                   </div>
                 </div>
               ))
