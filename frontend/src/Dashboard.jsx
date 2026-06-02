@@ -58,17 +58,21 @@ const Dashboard = ({ user, onNavigate, onLogout }) => {
     e.preventDefault();
     if (!form.title || !form.amount || !form.date) return;
 
-    const payload = { ...form, amount: parseFloat(form.amount) };
+    
+    const { id, ...rest } = form;
+    const payload = { ...rest, amount: parseFloat(form.amount) };
 
-    if (form.id) {
+    if (id) {
       
-      dispatch(updateTransactionAPI(payload));
+      dispatch(updateTransactionAPI({ ...payload, id }));
     } else {
       
-      dispatch(addTransactionAPI(payload));
+      dispatch(addTransactionAPI(payload))
+        .unwrap() 
+        .catch(err => alert("Błąd zapisu: sprawdź konsolę (F12)"));
     }
     
-    
+  
     setForm({ 
       id: null, title: '', amount: '', type: 'expense', 
       category: 'Jedzenie', currency: 'PLN', 
@@ -102,7 +106,7 @@ const Dashboard = ({ user, onNavigate, onLogout }) => {
           }}>
             {isOnline ? '● Online' : '● Offline (Zapis lokalny)'}
           </span>
-          <span style={dashStyles.userEmail}>{user?.email || 'Gość'}</span>
+          <span style={dashStyles.userEmail}>{user?.username || user?.email || 'Gość'}</span>
           <button onClick={onLogout} style={dashStyles.logoutBtn}>Wyloguj</button>
         </div>
       </nav>
