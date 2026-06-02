@@ -14,7 +14,7 @@ const Login = ({ onNavigate, onLogin }) => {
     }
 
     setError('');
-    // Przekazujemy dane do App.jsx, co spowoduje zmianę ekranu
+    
     onLogin({ email });
   };
 

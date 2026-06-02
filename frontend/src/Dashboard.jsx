@@ -3,19 +3,19 @@ import { useSelector, useDispatch } from 'react-redux';
 import { addTransaction, updateTransaction, deleteTransaction } from './store/transactionsSlice';
 
 const Dashboard = ({ user, onNavigate, onLogout }) => {
-  // Pobieramy transakcje z Reduksa
+  
   const transactions = useSelector((state) => state.transactions.items);
   const dispatch = useDispatch();
 
-  // Stan sieci (Tryb Offline i Synchronizacja)
+  
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   
-  // Stan formularza
+  
   const [form, setForm] = useState({ id: null, title: '', amount: '', type: 'expense', category: 'Jedzenie', currency: 'PLN', date: '' });
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState('Wszystkie');
 
-  // Kursy walut (tymczasowo zahardkodowane)
+  
   const exchangeRates = { PLN: 1, USD: 4.0, EUR: 4.3 };
 
   useEffect(() => {
@@ -41,7 +41,7 @@ const Dashboard = ({ user, onNavigate, onLogout }) => {
 
   const balance = totalIncome - totalExpense;
 
-  // Zapis do Reduksa (Create / Update)
+  
   const handleSave = (e) => {
     e.preventDefault();
     if (!form.title || !form.amount || !form.date) return;
@@ -61,7 +61,7 @@ const Dashboard = ({ user, onNavigate, onLogout }) => {
     setForm(transaction);
   };
 
-  // Usuwanie z Reduksa (Delete)
+  
   const handleDelete = (id) => {
     dispatch(deleteTransaction(id));
   };

@@ -4,7 +4,7 @@ import Register from './Register';
 import Dashboard from './Dashboard';
 
 function App() {
-  // 1. Inicjalizacja stanu na podstawie tego, co jest w pamięci przeglądarki
+  
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem('auth_user');
     return savedUser ? JSON.parse(savedUser) : null;
@@ -14,18 +14,18 @@ function App() {
     return localStorage.getItem('auth_user') ? 'home' : 'login';
   });
 
-  // 2. Aktualizacja przy logowaniu
+  
   const handleLogin = (userData) => {
     setUser(userData);
     setCurrentPage('home');
-    localStorage.setItem('auth_user', JSON.stringify(userData)); // Zapisujemy sesję
+    localStorage.setItem('auth_user', JSON.stringify(userData)); 
   };
 
-  // 3. Aktualizacja przy wylogowaniu
+  
   const handleLogout = () => {
     setUser(null);
     setCurrentPage('login');
-    localStorage.removeItem('auth_user'); // Czyścimy sesję
+    localStorage.removeItem('auth_user'); 
   };
 
   return (
