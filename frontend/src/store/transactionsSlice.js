@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk, current } from '@reduxjs/toolkit';
+import { getAllFromStore, putAllToStore, addToStore, clearStore } from '../db';
 
 const API_URL = 'http://localhost:8000/api/transactions/';
 
@@ -10,30 +11,29 @@ const getAuthHeaders = () => {
   };
 };
 
-const loadOfflineQueue = () => {
-  const saved = localStorage.getItem('offline_transactions');
-  return saved ? JSON.parse(saved) : [];
-};
-
-const loadCachedTransactions = () => {
-  const saved = localStorage.getItem('cached_transactions');
-  return saved ? JSON.parse(saved) : [];
-};
+export const initFromDB = createAsyncThunk('transactions/initFromDB', async () => {
+  const [cached, offline] = await Promise.all([
+    getAllFromStore('transactions'),
+    getAllFromStore('offlineQueue'),
+  ]);
+  return { cached, offline };
+});
 
 export const fetchTransactions = createAsyncThunk('transactions/fetch', async () => {
   const response = await fetch(API_URL, { headers: getAuthHeaders() });
   if (!response.ok) throw new Error('Błąd pobierania danych');
-  return response.json();
+  const data = await response.json();
+  await putAllToStore('transactions', data);
+  return data;
 });
 
 export const addTransactionAPI = createAsyncThunk('transactions/add', async (transaction, { rejectWithValue }) => {
-  
   if (!navigator.onLine) {
     const offlineTx = { ...transaction, id: `temp-${Date.now()}`, isOffline: true };
+    await addToStore('offlineQueue', offlineTx);
     return rejectWithValue({ isOfflineObj: true, data: offlineTx });
   }
 
-  
   try {
     const response = await fetch(API_URL, {
       method: 'POST',
@@ -41,9 +41,12 @@ export const addTransactionAPI = createAsyncThunk('transactions/add', async (tra
       body: JSON.stringify(transaction),
     });
     if (!response.ok) throw new Error('Błąd dodawania');
-    return await response.json();
+    const data = await response.json();
+    await addToStore('transactions', data);
+    return data;
   } catch (error) {
     const offlineTx = { ...transaction, id: `temp-${Date.now()}`, isOffline: true };
+    await addToStore('offlineQueue', offlineTx);
     return rejectWithValue({ isOfflineObj: true, data: offlineTx });
   }
 });
@@ -82,20 +85,19 @@ export const syncOfflineTransactions = createAsyncThunk(
         });
         if (!response.ok) {
           hasError = true;
-          break; 
+          break;
         }
       } catch (err) {
         hasError = true;
-        break; 
+        break;
       }
     }
 
-    
     if (hasError) {
       throw new Error("Synchronizacja przerwana (brak stabilnego łącza z backendem)");
     }
 
-    
+    await clearStore('offlineQueue');
     dispatch(fetchTransactions());
   },
   {
@@ -109,38 +111,37 @@ export const syncOfflineTransactions = createAsyncThunk(
 const transactionsSlice = createSlice({
   name: 'transactions',
   initialState: {
-    
-    items: [...loadOfflineQueue(), ...loadCachedTransactions()],
-    offlineQueue: loadOfflineQueue(),
+    items: [],
+    offlineQueue: [],
     status: 'idle',
     isSyncing: false,
-    error: null
+    error: null,
+    dbLoaded: false,
   },
   reducers: {},
   extraReducers: (builder) => {
     builder
+      .addCase(initFromDB.fulfilled, (state, action) => {
+        const { cached, offline } = action.payload;
+        state.offlineQueue = offline;
+        state.items = [...offline, ...cached];
+        state.dbLoaded = true;
+      })
       .addCase(fetchTransactions.fulfilled, (state, action) => {
         state.status = 'succeeded';
         state.items = [...state.offlineQueue, ...action.payload];
-        localStorage.setItem('cached_transactions', JSON.stringify(action.payload));
       })
       .addCase(fetchTransactions.rejected, (state) => {
         state.status = 'failed';
-       
       })
       .addCase(addTransactionAPI.fulfilled, (state, action) => {
         state.items.unshift(action.payload);
-        const cached = loadCachedTransactions();
-        cached.unshift(action.payload);
-        localStorage.setItem('cached_transactions', JSON.stringify(cached));
       })
       .addCase(addTransactionAPI.rejected, (state, action) => {
         if (action.payload && action.payload.isOfflineObj) {
           const newTx = action.payload.data;
           state.offlineQueue.push(newTx);
           state.items.unshift(newTx);
-          
-          localStorage.setItem('offline_transactions', JSON.stringify(current(state.offlineQueue)));
         }
       })
       .addCase(updateTransactionAPI.fulfilled, (state, action) => {
@@ -155,13 +156,10 @@ const transactionsSlice = createSlice({
       })
       .addCase(syncOfflineTransactions.fulfilled, (state) => {
         state.isSyncing = false;
-        
         state.offlineQueue = [];
-        localStorage.removeItem('offline_transactions');
       })
       .addCase(syncOfflineTransactions.rejected, (state) => {
         state.isSyncing = false;
-        
       });
   },
 });
