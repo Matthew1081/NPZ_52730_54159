@@ -1,8 +1,6 @@
-# AiKMSiBD_52730_54159
-
 # Osobisty Asystent Finansowy
 
-Projekt laboratoryjny realizowany w ramach przedmiotu **AiKMSiBD** przez zespół w składzie:
+Projekt laboratoryjny realizowany przez zespół w składzie:
 * Mateusz Kwiatkowski: 52730
 * Dawid Ladra: 54159
 
